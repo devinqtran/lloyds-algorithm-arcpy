@@ -1,0 +1,14 @@
+# ArcGIS / Python
+__pycache__/
+*.pyc
+
+# ArcGIS Pro
+*.aprx
+*.aprx~
+*.lock
+*.gdb/
+*.sde/
+
+# Environments
+.env
+venv/
