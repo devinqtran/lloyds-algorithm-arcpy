@@ -34,7 +34,7 @@ class LloydsAlgorithmTool(object):
             name="input_points",
             datatype="GPFeatureLayer",
             parameterType="Required",
-            direction="Input",)
+            direction="Input")
         param0.filter.list = ["Point"]
         
         param1 = arcpy.Parameter(
@@ -42,7 +42,7 @@ class LloydsAlgorithmTool(object):
             name="num_facilities",
             datatype="GPLong",
             parameterType="Required",
-            direction="Input",)
+            direction="Input")
         param1.value = 3
         
         param2 = arcpy.Parameter(
@@ -50,7 +50,7 @@ class LloydsAlgorithmTool(object):
             name="max_iterations",
             datatype="GPLong",
             parameterType="Required",
-            direction="Input",)
+            direction="Input")
         param2.value = 20
         
         param3 = arcpy.Parameter(
@@ -58,7 +58,7 @@ class LloydsAlgorithmTool(object):
             name="convergence_threshold",
             datatype="GPDouble",
             parameterType="Required",
-            direction="Input",)
+            direction="Input")
         param3.value = 0.1
         
         param4 = arcpy.Parameter(
@@ -66,7 +66,7 @@ class LloydsAlgorithmTool(object):
             name="output_workspace",
             datatype="DEWorkspace",
             parameterType="Required",
-            direction="Input",)
+            direction="Input")
         param4.defaultEnvironmentName = "workspace"
         
         param5 = arcpy.Parameter(
@@ -74,7 +74,7 @@ class LloydsAlgorithmTool(object):
             name="output_facilities",
             datatype="GPString",
             parameterType="Required",
-            direction="Input",)
+            direction="Input")
         param5.value = "Optimal_Facilities"
         
         param6 = arcpy.Parameter(
@@ -82,7 +82,7 @@ class LloydsAlgorithmTool(object):
             name="output_iterations",
             datatype="GPString",
             parameterType="Required",
-            direction="Input",)
+            direction="Input")
         param6.value = "Facility_Iterations"
         
         param7 = arcpy.Parameter(
@@ -90,7 +90,7 @@ class LloydsAlgorithmTool(object):
             name="output_assignments",
             datatype="GPString",
             parameterType="Required",
-            direction="Input",)
+            direction="Input")
         param7.value = "Point_Assignments"
 
         param8 = arcpy.Parameter(
@@ -135,14 +135,15 @@ class LloydsAlgorithmTool(object):
         output_facilities_name = parameters[5].valueAsText
         output_iterations_name = parameters[6].valueAsText
         output_assignments_name = parameters[7].valueAsText
-        output_voronoi_name = parameters[8].valueAsText  # New parameter
+        output_voronoi_name = parameters[8].valueAsText if parameters[8].valueAsText else None
         
         # Configure environment
         arcpy.env.workspace = output_workspace
         arcpy.env.overwriteOutput = True
         
         # Print header
-        self._print_header(input_points, num_facilities, max_iterations, convergence_threshold)
+        self._print_header(input_points, num_facilities, max_iterations, 
+                          convergence_threshold, output_voronoi_name)
         
         # Load demand points
         points, spatial_ref = self._load_demand_points(input_points)
@@ -163,13 +164,13 @@ class LloydsAlgorithmTool(object):
             output_facilities_name,
             output_iterations_name,
             output_assignments_name,
-            output_voronoi_name  # Pass Voronoi parameter
+            output_voronoi_name
         )
         
         # Print summary
         self._print_summary(iteration_history, output_facilities_name, 
-                        output_iterations_name, output_assignments_name,
-                        output_voronoi_name)
+                          output_iterations_name, output_assignments_name,
+                          output_voronoi_name)
         
         # Add to map
         self._add_to_map(output_workspace, output_facilities_name, 
@@ -178,7 +179,8 @@ class LloydsAlgorithmTool(object):
         
         return
     
-    def _print_header(self, input_points, num_facilities, max_iterations, convergence_threshold):
+    def _print_header(self, input_points, num_facilities, max_iterations, 
+                     convergence_threshold, voronoi_name):
         """Print tool execution header"""
         arcpy.AddMessage("=" * 60)
         arcpy.AddMessage("LLOYD'S ALGORITHM FOR OPTIMAL FACILITY LOCATION")
@@ -187,6 +189,8 @@ class LloydsAlgorithmTool(object):
         arcpy.AddMessage(f"Number of facilities: {num_facilities}")
         arcpy.AddMessage(f"Maximum iterations: {max_iterations}")
         arcpy.AddMessage(f"Convergence threshold: {convergence_threshold}")
+        if voronoi_name:
+            arcpy.AddMessage(f"Creating Voronoi polygons: Yes")
         arcpy.AddMessage("")
     
     def _load_demand_points(self, input_points):
@@ -203,7 +207,7 @@ class LloydsAlgorithmTool(object):
         return points, spatial_ref
     
     def _print_summary(self, iteration_history, facilities_name, iterations_name, 
-                   assignments_name, voronoi_name=None):
+                      assignments_name, voronoi_name=None):
         """Print execution summary"""
         arcpy.AddMessage("")
         arcpy.AddMessage("=" * 60)
@@ -214,7 +218,7 @@ class LloydsAlgorithmTool(object):
         arcpy.AddMessage(f"Final objective: {iteration_history[-1]['objective']:.2f}")
         
         improvement = ((iteration_history[0]['objective'] - iteration_history[-1]['objective']) 
-                    / iteration_history[0]['objective'] * 100)
+                      / iteration_history[0]['objective'] * 100)
         arcpy.AddMessage(f"Improvement: {improvement:.2f}%")
         arcpy.AddMessage("")
         
@@ -232,21 +236,23 @@ class LloydsAlgorithmTool(object):
         arcpy.AddMessage("=" * 60)
     
     def _add_to_map(self, workspace, facilities_name, iterations_name, 
-                assignments_name, voronoi_name=None):
+                    assignments_name, voronoi_name=None):
         """Add output layers to current map"""
         try:
             aprx = arcpy.mp.ArcGISProject("CURRENT")
             map_view = aprx.activeMap
             if map_view:
+                # Add Voronoi first (so it's at the bottom of layer stack)
+                if voronoi_name:
+                    voronoi_path = os.path.join(workspace, voronoi_name)
+                    if arcpy.Exists(voronoi_path):
+                        voronoi_layer = map_view.addDataFromPath(voronoi_path)
+                        self._apply_voronoi_symbology(voronoi_layer)
+                
+                # Add other layers
                 facilities_path = os.path.join(workspace, facilities_name)
                 iterations_path = os.path.join(workspace, iterations_name)
                 assignments_path = os.path.join(workspace, assignments_name)
-                
-                # Add Voronoi first (so it's at the bottom)
-                if voronoi_name:
-                    voronoi_path = os.path.join(workspace, voronoi_name)
-                    voronoi_layer = map_view.addDataFromPath(voronoi_path)
-                    self._apply_voronoi_symbology(voronoi_layer)
                 
                 map_view.addDataFromPath(facilities_path)
                 map_view.addDataFromPath(iterations_path)
@@ -263,20 +269,12 @@ class LloydsAlgorithmTool(object):
     def _apply_unique_value_symbology(self, layer):
         """Apply unique value symbology to assignments layer based on Assigned_Facility"""
         try:
-            # Get the layer's symbology
             sym = layer.symbology
-        
-            # Check if it's a feature layer with renderer support
+            
             if hasattr(sym, 'renderer'):
-                # Update to unique values renderer
                 sym.updateRenderer('UniqueValueRenderer')
-            
-                # Set the field for unique values
                 sym.renderer.fields = ['Assigned_Facility']
-            
-                # Apply the symbology back to the layer
                 layer.symbology = sym
-            
                 arcpy.AddMessage("  Applied unique value symbology based on Assigned_Facility")
             else:
                 arcpy.AddMessage("  Layer does not support renderer-based symbology")

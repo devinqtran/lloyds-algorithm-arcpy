@@ -8,13 +8,14 @@
 
 👤 **Devin Tran**
 
-* Website: https://www.devinqtran.com/
-* Github: [@devinqtran](https://github.com/devinqtran)
-* LinkedIn: [@devinqtran](https://linkedin.com/in/devinqtran)
+- Website: https://www.devinqtran.com/
+- Github: [@devinqtran](https://github.com/devinqtran)
+- LinkedIn: [@devinqtran](https://linkedin.com/in/devinqtran)
 
 ## Show your support
 
 Give a ⭐️ if this project helped you!
 
-***
+---
+
 _This README was generated with ❤️ by [readme-md-generator](https://github.com/kefranabg/readme-md-generator)_

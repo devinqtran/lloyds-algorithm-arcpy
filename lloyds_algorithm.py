@@ -10,9 +10,8 @@ from geometry_utils import GeometryUtils
 
 class LloydsAlgorithm:
     """Core Lloyd's algorithm implementation"""
-
-    # Constructor
-    def __init__(self, num_facilities, max_iterations, convergence_threshold):
+    
+    def __init__(self, num_facilities, max_iterations, convergence_threshold, random_seed=42):
         """
         Initialize algorithm parameters
         
@@ -20,10 +19,12 @@ class LloydsAlgorithm:
             num_facilities: Number of facilities to locate
             max_iterations: Maximum iterations to run
             convergence_threshold: Stop when facilities move less than this distance
+            random_seed: Seed for random number generator (default: 42)
         """
         self.num_facilities = num_facilities
         self.max_iterations = max_iterations
         self.convergence_threshold = convergence_threshold
+        self.random_seed = random_seed
         self.geo_utils = GeometryUtils()
     
     def run(self, points):
@@ -111,8 +112,7 @@ class LloydsAlgorithm:
         Returns:
             List of facility dictionaries with 'id', 'x', 'y' keys
         """
-        # Randomly creates points for algorithm to start and selects them randomly
-        random.seed(42)  # For reproducibility, change number to change starting points
+        random.seed(self.random_seed)  # Use instance variable instead of hardcoded 42
         selected_indices = random.sample(range(len(points)), self.num_facilities)
         
         facilities = []
@@ -125,7 +125,6 @@ class LloydsAlgorithm:
         
         return facilities
     
-    # Assign the demand points to facilities using nearest neighbor
     def _assign_points_to_facilities(self, points, facilities):
         """
         Assign each point to its nearest facility
@@ -157,7 +156,6 @@ class LloydsAlgorithm:
         
         return assignments
     
-    # Calculates the objective function (total distance)
     def _calculate_objective_function(self, points, facilities, assignments):
         """
         Calculate total distance from points to assigned facilities

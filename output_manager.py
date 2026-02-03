@@ -5,6 +5,7 @@ Handles creation of all output feature classes
 
 import arcpy
 from geometry_utils import GeometryUtils
+from lloyds_algorithm import LloydsAlgorithm
 
 
 class OutputManager:
@@ -21,6 +22,7 @@ class OutputManager:
         self.workspace = workspace
         self.spatial_ref = spatial_reference
         self.geo_utils = GeometryUtils()
+
     
     def create_all_outputs(self, iteration_history, points, 
                       facilities_name, iterations_name, assignments_name, 
